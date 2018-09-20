@@ -1,4 +1,5 @@
-import Ember from 'ember';
+import { click, findAll, currentPath, visit } from '@ember/test-helpers';
+import { run, later } from '@ember/runloop';
 import {
   module,
   test
@@ -8,97 +9,81 @@ import startApp from '../helpers/start-app';
 
 var application;
 
-module('Acceptance: ActiveLink', {
-  beforeEach: function() {
+module('Acceptance: ActiveLink', function(hooks) {
+  hooks.beforeEach(function() {
     application = startApp();
-  },
-
-  afterEach: function() {
-    Ember.run(application, 'destroy');
-  }
-});
-
-test('component should show correct active state', function(assert) {
-  visit('/');
-
-  andThen(function() {
-    assert.equal(currentPath(), 'index');
-    assert.equal(find('#index-link li.active').length, 1);
-    assert.equal(find('#index-link li.active a.active').length, 1);
-    assert.equal(find('#other-link li.active').length, 0);
-    assert.equal(find('#other-link li.active a.active').length, 0);
-
-    click('#other-link a');
-
-    andThen(function() {
-      assert.equal(currentPath(), 'other');
-      assert.equal(find('#index-link li.active').length, 0);
-      assert.equal(find('#index-link li.active a.active').length, 0);
-      assert.equal(find('#other-link li.active').length, 1);
-      assert.equal(find('#other-link li.active a.active').length, 1);
-    });
   });
-});
 
-test('component should show correct disabled state', function(assert) {
-  visit('/');
-
-  andThen(function() {
-    assert.equal(currentPath(), 'index');
-    assert.equal(find('#index-link-disabled li.disabled').length, 1);
-    assert.equal(find('#index-link-disabled li.disabled a.disabled').length, 1);
+  hooks.afterEach(function() {
+    run(application, 'destroy');
   });
-});
 
-test('changed active class should be applied to the proper elements', function(assert) {
-  visit('/');
+  test('component should show correct active state', async function(assert) {
+    await visit('/');
 
-  andThen(function() {
     assert.equal(currentPath(), 'index');
-    assert.equal(find('#linkto-active-class li.enabled').length, 1);
-    assert.equal(find('#linkto-active-class a.enabled').length, 1);
-    assert.equal(find('#activelink-active-class li.enabled').length, 1);
-    assert.equal(find('#activelink-active-class a.active').length, 1);
+    assert.dom('#index-link li.active').exists({ count: 1 });
+    assert.dom('#index-link li.active a.active').exists({ count: 1 });
+    assert.dom('#other-link li.active').doesNotExist();
+    assert.dom('#other-link li.active a.active').doesNotExist();
+
+    await click('#other-link a');
+
+    assert.equal(currentPath(), 'other');
+    assert.dom('#index-link li.active').doesNotExist();
+    assert.dom('#index-link li.active a.active').doesNotExist();
+    assert.dom('#other-link li.active').exists({ count: 1 });
+    assert.dom('#other-link li.active a.active').exists({ count: 1 });
   });
-});
 
-test('changed disabled class should be applied to the proper elements', function(assert) {
-  visit('/');
+  test('component should show correct disabled state', async function(assert) {
+    await visit('/');
 
-  andThen(function() {
     assert.equal(currentPath(), 'index');
-    assert.equal(find('#linkto-disabled-class li.inactive').length, 1);
-    assert.equal(find('#linkto-disabled-class a.inactive').length, 1);
-    assert.equal(find('#activelink-disabled-class li.inactive').length, 1);
-    assert.equal(find('#activelink-disabled-class a.disabled').length, 1);
+    assert.dom('#index-link-disabled li.disabled').exists({ count: 1 });
+    assert.dom('#index-link-disabled li.disabled a.disabled').exists({ count: 1 });
   });
-});
 
-test('change the linkSelector to look for a button', function(assert) {
-  visit('/');
+  test('changed active class should be applied to the proper elements', async function(assert) {
+    await visit('/');
 
-  andThen(function() {
     assert.equal(currentPath(), 'index');
-    assert.equal(find('#button-links li.active').length, 1);
-    assert.equal(find('#button-links li.active button.active').length, 1);
+    assert.dom('#linkto-active-class li.enabled').exists({ count: 1 });
+    assert.dom('#linkto-active-class a.enabled').exists({ count: 1 });
+    assert.dom('#activelink-active-class li.enabled').exists({ count: 1 });
+    assert.dom('#activelink-active-class a.active').exists({ count: 1 });
   });
-});
 
-test('transitioning in and out classes', function(assert) {
-  visit('/');
+  test('changed disabled class should be applied to the proper elements', async function(assert) {
+    await visit('/');
 
-  andThen(function() {
+    assert.equal(currentPath(), 'index');
+    assert.dom('#linkto-disabled-class li.inactive').exists({ count: 1 });
+    assert.dom('#linkto-disabled-class a.inactive').exists({ count: 1 });
+    assert.dom('#activelink-disabled-class li.inactive').exists({ count: 1 });
+    assert.dom('#activelink-disabled-class a.disabled').exists({ count: 1 });
+  });
+
+  test('change the linkSelector to look for a button', async function(assert) {
+    await visit('/');
+
+    assert.equal(currentPath(), 'index');
+    assert.dom('#button-links li.active').exists({ count: 1 });
+    assert.dom('#button-links li.active button.active').exists({ count: 1 });
+  });
+
+  test('transitioning in and out classes', async function(assert) {
+    await visit('/');
+
     find('#other-link a').click();
 
     let done = assert.async();
 
     // need to wait for ember to have a chance to add the classes :)
-    Ember.run.later(() => {
-      assert.equal(find('#other-link li.ember-transitioning-in').length, 1);
-      assert.equal(find('#index-link li.ember-transitioning-out').length, 1);
+    later(() => {
+      assert.dom('#other-link li.ember-transitioning-in').exists({ count: 1 });
+      assert.dom('#index-link li.ember-transitioning-out').exists({ count: 1 });
       done();
     }, 1);
-
   });
-
 });
